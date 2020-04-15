@@ -39,7 +39,7 @@ services:
         - NGINX_SERVER_ROOT=${APP_DOCROOT:-/var/www/app/web}
         - NGINX_LISTEN_PORT=8080
     depends_on:
-      drupal_db:
+      mariadb:
         condition: service_healthy
     environment:
       APP_NAME: ${DRUPAL_SITE_NAME:-islandora}
@@ -72,17 +72,21 @@ services:
       - "traefik.http.routers.${PROJECT_NAME:-islandora}.rule=Host(`${PROJECT_BASE_URL:-idcp.localhost}`)"
       - "traefik.http.services.${PROJECT_NAME:-islandora}.loadbalancer.server.port=8080"
 
+      
   solr:
-    image: wodby/solr:$SOLR_TAG
+    image: solr:$SOLR_TAG
     container_name: "${PROJECT_NAME}_solr"
-    environment:
-      SOLR_DEFAULT_CONFIG_SET: ${SOLR_CONFIG_SET:-search_api_solr_8.x-3.2}
-      SOLR_HEAP: ${SOLR_HEAP:-1024m}
+    ports:
+      - "8983:8983"
     volumes:
-      - solr-data:/opt/solr/server/solr
-    # TO DO: Determine what type of container handling is needed
+      - solr-data:/var/solr/data/islandora
+    entrypoint:
+      - docker-entrypoint.sh
+      - solr-precreate
+      - islandora
     labels:
       - "traefik.http.routers.${PROJECT_NAME}_solr.rule=Host(`solr.${PROJECT_BASE_URL}`)"
+
 
   cantaloupe:
     image: lyrasis/cantaloupe:latest # should this be 4.0-1 instead?
